@@ -1,18 +1,20 @@
 import { File, Play, Plus, Trash2 } from "lucide-react";
 import React, { useState } from "react";
 import Modal from "antd/es/modal/Modal";
-import { Button, Form, Input, message, Select } from "antd";
+import { Button, Form, Input, message, Popconfirm, Select, Tooltip } from "antd";
 import { useForm } from "antd/es/form/Form";
 import { usePlaylist } from "./zustand/usePlaylist";
 import getVideoId from 'get-youtube-id'
+import moment from "moment";
 
 const App = ()=>{
 const [openPlaylistModal,setOpenPlaylistModal] = useState(false)
 const [form] = useForm()
 const [videoform] = useForm()
-const {playlists,setPlaylist} = usePlaylist()
+const {playlists,setPlaylist,setVideo,videos,removeVideo} = usePlaylist()
 const [activePlaylist,setActivePlaylist] = useState("Youtube Playlist")
 const [openVideoModal,setOpenVideoModal] = useState(false)
+const [data,setData] = useState(videos)
 
   const createPlaylist = (value)=>{
     setPlaylist(value.playlist)
@@ -26,6 +28,13 @@ const [openVideoModal,setOpenVideoModal] = useState(false)
 
   const browsePlaylist= (playlist)=>{
     setActivePlaylist(playlist)
+    if(playlist === 'all')
+    {
+      setData(videos)
+    }else{
+      const filterdData = videos.filter((item)=>item.playlist === playlist)
+      setData(filterdData)
+    }
   }
 
   const addVideo = (value) =>{
@@ -38,7 +47,8 @@ const [openVideoModal,setOpenVideoModal] = useState(false)
     value.date = new Date()
     value.thumbnail = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
     value.id = videoId
-    console.log(value)
+    setVideo(value)
+    handleVideoModalClose()
 
   }
 
@@ -47,6 +57,11 @@ const [openVideoModal,setOpenVideoModal] = useState(false)
     setOpenVideoModal(false)
     videoform.resetFields()
 
+  }
+
+  const deleteVideo = (id)=>{
+   removeVideo(id)
+   message.success('video removed!')
   }
 
   return(
@@ -84,22 +99,29 @@ const [openVideoModal,setOpenVideoModal] = useState(false)
         
         <div className="grid grid-cols-4 gap-8 mt-12 px-16">
         {
-          Array(20).fill(0).map((item, index)=>(
+         data.map((item, index)=>(
 
           <div className="border border-gray-300 rounded-lg hover:scale-120 duration-300 hover:cursor-pointer" key={index}>
-            <img src="https://img.youtube.com/vi/fmTDDNKG1ps/maxresdefault.jpg" className="rounded-t-lg" alt="" />
+            <img src={item.thumbnail} className="rounded-t-lg" alt="" />
             <div className="p-3">
-              <h1 className="text-base font-medium">New Song</h1>
-              <label className="text-gray-500">16 Dec 2025 08:59 AM</label>
+              <Tooltip title={item.title}>
+                 <h1 className="text-base font-medium">{item.title.slice(0,30)}...</h1>
+              </Tooltip>
+             
+              <label className="text-gray-500">{moment(item.date).format('DD MMM YYYY, hh:mm:A')}</label>
               <div className="mt-2 flex gap-2">
-                <button className="active:scale-80 duration-300 py-1 px-2 rounded flex bg-green-500 items-center text-white text-xs">
+                <a href={item.url} target = "_blank" className="active:scale-80 duration-300 py-1 px-2 rounded flex bg-green-500 items-center text-white text-xs">
                 <Play className="w-3 h-3 mr-1"/>
                 Play
-              </button>
-              <button className="active:scale-80 duration-300 py-1 px-2 rounded flex bg-rose-500 items-center text-white text-xs">
+              </a>
+              <Popconfirm title="do you want to delete?" onConfirm={()=>deleteVideo(item.id)}>
+                <button className="active:scale-80 duration-300 py-1 px-2 rounded flex bg-rose-500 items-center text-white text-xs">
                 <Trash2 className="w-3 h-3 mr-1"/>
                 Delete
               </button>
+              </Popconfirm>
+              
+              <label className="captalize text-gray-500 font-medium text-xs">{item.playlist}</label>
               </div>
             </div>
            
